@@ -1,0 +1,4 @@
+torch==2.7.0
+torch_geometric==2.6.1
+pandas==2.2.3
+tqdm==4.67.1
