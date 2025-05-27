@@ -56,7 +56,7 @@ def evaluate(data_loader, model, device, calculate_accuracy=False):
                 correct += (pred == data.y.view(-1)).sum().item()
                 total += data.y.size(0)
     if calculate_accuracy:
-        accuracy = correct / total
+        accuracy = correct / total # ERROR: Division By 0
         return accuracy, predictions
     return predictions
 
