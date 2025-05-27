@@ -198,7 +198,7 @@ def main(args):
 
     # Generate predictions for the test set using the best model
     print("🏋Start evaluating the model on the test set...")
-    model.load_state_dict(torch.load(checkpoint_path))
+    model.load_state_dict(torch.load(checkpoint_path, map_location=device))
     test_acc, predictions = evaluate(test_loader, model, device, calculate_accuracy=True)
     print(f"Test Accuracy: {test_acc:.4f}")
     save_predictions(predictions, args.test_path)
