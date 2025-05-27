@@ -144,7 +144,7 @@ def main(args):
 
     # Load pre-trained model for inference
     if os.path.exists(checkpoint_path) and not args.train_path:
-        model.load_state_dict(torch.load(checkpoint_path))
+        model.load_state_dict(torch.load(checkpoint_path, map_location=device))
         print(f"Loaded best model from {checkpoint_path}")
 
     print("📊 Loading datasets...")
