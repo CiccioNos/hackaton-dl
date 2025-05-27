@@ -153,6 +153,7 @@ def main(args):
 
     # If train_path is provided, train the model
     if args.train_path:
+        print("🏋Start training the model...")
         train_dataset = GraphDataset(args.train_path, transform=add_zeros)
         train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
 
@@ -192,17 +193,22 @@ def main(args):
         # Plot training progress in current directory
         plot_training_progress(train_losses, train_accuracies, os.path.join(logs_folder, "plots"))
 
+        print("🏋Training completed. Best model saved.")
+
     # Generate predictions for the test set using the best model
     model.load_state_dict(torch.load(checkpoint_path))
-    predictions = evaluate(test_loader, model, device, calculate_accuracy=False)
+    test_acc, predictions = evaluate(test_loader, model, device, calculate_accuracy=True)
+    print(f"Test Accuracy: {test_acc:.4f}")
     save_predictions(predictions, args.test_path)
+    print("✅ Predictions saved successfully.")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train and evaluate GNN models on graph datasets.")
     parser.add_argument("--train_path", type=str, help="Path to the training dataset (optional).")
     parser.add_argument("--test_path", type=str, required=True, help="Path to the test dataset.")
     parser.add_argument("--num_checkpoints", type=int, help="Number of checkpoints to save during training.")
-    parser.add_argument('--device', type=int, default=1, help='which gpu to use if any (default: 0)')
+    parser.add_argument('--device', type=int, default=0, help='which gpu to use if any (default: 0)')
     parser.add_argument('--gnn', type=str, default='gin', help='GNN gin, gin-virtual, or gcn, or gcn-virtual (default: gin-virtual)')
     parser.add_argument('--drop_ratio', type=float, default=0.5, help='dropout ratio (default: 0.5)')
     parser.add_argument('--num_layer', type=int, default=5, help='number of GNN message passing layers (default: 5)')
