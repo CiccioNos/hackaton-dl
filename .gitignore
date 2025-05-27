@@ -6,5 +6,5 @@ venv_dl/
 
 # Project folders
 datasets/
-checkpoints/
+#checkpoints/
 logs/

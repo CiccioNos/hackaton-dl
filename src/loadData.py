@@ -46,6 +46,7 @@ import torch
 from torch_geometric.data import Dataset, Data
 from torch_geometric.loader import DataLoader
 
+
 class GraphDataset(Dataset):
     def __init__(self, filename, transform=None, pre_transform=None):
         self.raw = filename
@@ -62,6 +63,7 @@ class GraphDataset(Dataset):
         with gzip.open(self.raw, "rt", encoding="utf-8") as f:
             graphs_dicts = json.load(f)  # Load full JSON array without keeping references
             return len(graphs_dicts),graphs_dicts  # Return number of graphs
+
 
 def dictToGraphObject(graph_dict):
     edge_index = torch.tensor(graph_dict["edge_index"], dtype=torch.long)

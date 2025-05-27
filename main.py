@@ -147,6 +147,7 @@ def main(args):
         model.load_state_dict(torch.load(checkpoint_path))
         print(f"Loaded best model from {checkpoint_path}")
 
+    print("📊 Loading datasets...")
     # Prepare test dataset and loader
     test_dataset = GraphDataset(args.test_path, transform=add_zeros)
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
@@ -196,6 +197,7 @@ def main(args):
         print("🏋Training completed. Best model saved.")
 
     # Generate predictions for the test set using the best model
+    print("🏋Start evaluating the model on the test set...")
     model.load_state_dict(torch.load(checkpoint_path))
     test_acc, predictions = evaluate(test_loader, model, device, calculate_accuracy=True)
     print(f"Test Accuracy: {test_acc:.4f}")
