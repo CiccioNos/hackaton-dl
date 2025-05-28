@@ -190,7 +190,7 @@ def main(args):
                 checkpoint_path=os.path.join(checkpoints_folder, f"model_{test_dir_name}"),
                 current_epoch=epoch
             )
-            train_loss_eval, train_acc_eval, _ , _ , _ , _ = evaluate(train_loader, model, device, calculate_metrics=True)
+            train_loss_eval, train_acc_eval, _ , _ , _ , _ = evaluate(train_loader, model, device, criterion, calculate_metrics=True)
             print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}")
             print(f"Epoch {epoch + 1}/{num_epochs}, Evaluation Loss: {train_loss_eval:.4f}, Evaluation Train Acc: {train_acc_eval:.4f}")
             
@@ -214,8 +214,6 @@ def main(args):
     test_dataset = GraphDataset(args.test_path, transform=transform)
     test_loader = DataLoader(test_dataset, batch_size=best_batch_size, shuffle=False)
     print(f"Test dataset loaded with {len(test_dataset)} graphs.")
-
-
 
 
 def research_main(args):
