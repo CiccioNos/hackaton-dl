@@ -147,17 +147,20 @@ def main(args):
         model.load_state_dict(torch.load(checkpoint_path, map_location=device))
         print(f"Loaded best model from {checkpoint_path}")
 
-    print("📊 Loading datasets...")
+    print("📊 Loading test dataset...")
     # Prepare test dataset and loader
     test_dataset = GraphDataset(args.test_path, transform=add_zeros)
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
+    print(f"Test dataset loaded with {len(test_dataset)} graphs.")
 
     # If train_path is provided, train the model
     if args.train_path:
-        print("🏋 Start training the model...")
+        print("📊 Loading training dataset...")
         train_dataset = GraphDataset(args.train_path, transform=add_zeros)
         train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
+        print(f"Training dataset loaded with {len(train_dataset)} graphs.")
 
+        print("🏋 Start training the model...")
         # Training loop
         num_epochs = args.epochs
         best_accuracy = 0.0
