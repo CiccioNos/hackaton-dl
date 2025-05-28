@@ -45,8 +45,7 @@ def train(data_loader, model, optimizer, criterion, device, checkpoint_path, cur
 
 def evaluate(data_loader, model, device, criterion, calculate_metrics=False):
     model.eval()
-    correct = 0
-    total = 0
+    total_loss = 0
     labels = []
     predictions = []
     with torch.no_grad():
@@ -134,7 +133,18 @@ def main(args):
     script_dir = os.path.dirname(os.path.abspath(__file__))
     device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 
-    
+    # Set hyperparameters and model
+    best_num_layers = 5
+    best_emb_dim = 300
+    best_drop_ratio = 0.3
+
+    best_lr = 0.001
+
+    num_epochs = 10
+
+    model = GNN(gnn_type='gin', num_class=6, num_layer=best_num_layers, emb_dim=best_emb_dim,
+                drop_ratio=best_drop_ratio, virtual_node=False).to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=best_lr)
 
     # Identify dataset folder (A, B, C, or D)
     test_dir_name = os.path.basename(os.path.dirname(args.test_path))
@@ -166,19 +176,8 @@ def main(args):
         train_loader = DataLoader(train_dataset, batch_size=best_batch_size, shuffle=True)
         print(f"Training dataset loaded with {len(train_dataset)} graphs.")
 
-        # Set hyperparameters and model
-        best_num_layers = 5
-        best_emb_dim = 300
-        best_drop_ratio = 0.3
-        
-        best_lr = 0.001
-    
-        num_epochs = 10
-
-        model = GNN(gnn_type = 'gin', num_class = 6, num_layer=best_num_layers, emb_dim=best_emb_dim, drop_ratio=best_drop_ratio, virtual_node = False).to(device)
-        optimizer = torch.optim.Adam(model.parameters(), lr=best_lr)
-
         weights = class_weights(train_dataset)
+        print(f"Class weights computed: {weights}")
         criterion = torch.nn.CrossEntropyLoss(weight=weights.to(device))
 
         best_accuracy = 0.0

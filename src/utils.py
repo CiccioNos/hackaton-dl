@@ -34,6 +34,10 @@ def gzip_folder(folder_path, output_file):
 
 
 class AddStructuralFeatures(object):
+    def __init__(self, out_dim=300):
+        self.out_dim = out_dim
+        self.linear = torch.nn.Linear(16, out_dim)
+
     def __call__(self, data):
         row, col = data.edge_index
         num_nodes = data.num_nodes
@@ -62,5 +66,5 @@ class AddStructuralFeatures(object):
             clust_values
         ], dim=1)
 
-        data.x = features
+        data.x = self.linear(features)
         return data
