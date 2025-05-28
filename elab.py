@@ -132,7 +132,7 @@ def plot_training_progress(train_losses, train_accuracies, output_dir):
 def main(args):
     # Get the directory where the main script is located
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    device = torch.device("cuda:" + str(args.device)) if torch.cuda.is_available() else torch.device("cpu")
+    device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 
     
 
@@ -222,7 +222,7 @@ def main(args):
 def research_main(args):
     # Get the directory where the main script is located
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    device = torch.device("cuda:" + str(args.device)) if torch.cuda.is_available() else torch.device("cpu")
+    device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 
     # Hyperparameter search mode
     num_laers_search = [4, 5, 6]
