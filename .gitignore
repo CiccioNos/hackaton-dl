@@ -13,3 +13,8 @@ dl_venv/
 datasets/
 checkpoints/
 logs/
+submissions/
+
+# Submission compressed archive and test script
+submission.gz
+test.py
