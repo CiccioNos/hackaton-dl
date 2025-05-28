@@ -1,9 +1,13 @@
 # Virtual environement
+.venv/
 venv_dl/
 dl_venv/
 
 # PyCharm IDE
 .idea/
+
+# Visual Studio Code
+.DS_Store
 
 # Project folders
 datasets/
