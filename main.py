@@ -52,8 +52,8 @@ def evaluate(data_loader, model, device, calculate_accuracy=False):
             output = model(data)
             pred = output.argmax(dim=1)
             predictions.extend(pred.cpu().numpy())
-            if calculate_accuracy and data.y is not None:
-                correct += (pred == data.y.view(-1)).sum().item()
+            if calculate_accuracy:
+                correct += (pred == data.y).sum().item()
                 total += data.y.size(0)
     if calculate_accuracy:
         accuracy = correct / total # ERROR: Division By 0
@@ -154,7 +154,7 @@ def main(args):
 
     # If train_path is provided, train the model
     if args.train_path:
-        print("🏋Start training the model...")
+        print("🏋 Start training the model...")
         train_dataset = GraphDataset(args.train_path, transform=add_zeros)
         train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
 
@@ -199,8 +199,7 @@ def main(args):
     # Generate predictions for the test set using the best model
     print("🏋Start evaluating the model on the test set...")
     model.load_state_dict(torch.load(checkpoint_path, map_location=device))
-    test_acc, predictions = evaluate(test_loader, model, device, calculate_accuracy=True)
-    print(f"Test Accuracy: {test_acc:.4f}")
+    predictions = evaluate(test_loader, model, device, calculate_accuracy=False)
     save_predictions(predictions, args.test_path)
     print("✅ Predictions saved successfully.")
 

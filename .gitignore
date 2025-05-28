@@ -1,10 +1,11 @@
 # Virtual environement
 venv_dl/
+dl_venv/
 
 # PyCharm IDE
 .idea/
 
 # Project folders
 datasets/
-#checkpoints/
+checkpoints/
 logs/
