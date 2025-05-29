@@ -3,7 +3,6 @@ from torch_geometric.nn import MessagePassing
 from torch_geometric.nn import global_add_pool, global_mean_pool, global_max_pool, GlobalAttention, Set2Set
 import torch.nn.functional as F
 from torch_geometric.nn.inits import uniform
-
 from src.conv_mod import GNN_node, GNN_node_Virtualnode
 
 class GNN(torch.nn.Module):
