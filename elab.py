@@ -73,10 +73,7 @@ def evaluate(data_loader, model, device, criterion, calculate_metrics=False):
 
 
 def class_weights(dataset, num_classes=6):
-    labels = []
-    for data in dataset:
-        if data.y is not None:
-            labels.append(data.y.item() if data.y.dim() == 0 else data.y.squeeze().item())
+    labels = [dataset.dataset[idx].y.item() for idx in dataset.indices]
     labels = np.array(labels)
     class_counts = np.bincount(labels, minlength=num_classes)
     weights = 1.0 / (class_counts + 1e-9)
