@@ -1,4 +1,5 @@
 import torch
+from torch.ao.nn.quantized import LayerNorm
 from torch_geometric.nn import MessagePassing
 import torch.nn.functional as F
 from torch_geometric.nn import global_mean_pool, global_add_pool
@@ -12,7 +13,7 @@ class GINEConv(MessagePassing):
         super(GINEConv, self).__init__(aggr='add')
         self.mlp = Seq(
             Linear(emb_dim, 2 * emb_dim),
-            BatchNorm1d(2 * emb_dim),
+            LayerNorm(2 * emb_dim),
             ReLU(),
             Linear(2 * emb_dim, emb_dim)
         )
