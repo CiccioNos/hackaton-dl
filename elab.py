@@ -87,10 +87,11 @@ def fast_class_weights(subset, num_classes=6):
 
     for idx in indices:
         graph_dict = dataset.graphs_dicts[idx]
-        label = graph_dict["y"][0] if graph_dict["y"] is not None else None
-        labels.append(label)
+        if graph_dict["y"] is not None:
+            label = int(graph_dict["y"][0])
+            labels.append(label)
 
-    labels = np.array(labels)
+    labels = np.array(labels, dtype=int)
     class_counts = np.bincount(labels, minlength=num_classes)
     weights = 1.0 / (class_counts + 1e-9)
     weights *= len(labels) / weights.sum()
