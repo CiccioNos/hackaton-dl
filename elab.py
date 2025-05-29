@@ -80,6 +80,21 @@ def class_weights(dataset, num_classes=6):
     weights = weights * (len(labels) / weights.sum())
     return torch.tensor(weights, dtype=torch.float)
 
+def fast_class_weights(subset, num_classes=6):
+    dataset = subset.dataset
+    indices = subset.indices
+    labels = []
+
+    for idx in indices:
+        graph_dict = dataset.graphs_dicts[idx]
+        label = graph_dict["y"][0] if graph_dict["y"] is not None else None
+        labels.append(label)
+
+    labels = np.array(labels)
+    class_counts = np.bincount(labels, minlength=num_classes)
+    weights = 1.0 / (class_counts + 1e-9)
+    weights *= len(labels) / weights.sum()
+    return torch.tensor(weights, dtype=torch.float)
 
 def save_predictions(predictions, test_path):
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -180,9 +195,10 @@ def main(args):
         val_loader = DataLoader(val_set, batch_size=best_batch_size, shuffle=False)
 
         print("🧮 Computing class weights...")
-        weights = class_weights(train_set, num_classes=6)
-        print(f"Class weights computed: {weights}")
-        criterion = torch.nn.CrossEntropyLoss(weight=weights.to(device))
+        # weights = class_weights(train_set, num_classes=6)
+        fast_weights = fast_class_weights(train_set, num_classes=6)
+        print(f"Class weights computed: {fast_weights}")
+        criterion = torch.nn.CrossEntropyLoss(weight=fast_weights.to(device))
 
         best_accuracy = 0.0
         train_losses = []
