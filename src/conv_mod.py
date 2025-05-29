@@ -1,10 +1,9 @@
 import torch
-from torch.ao.nn.quantized import LayerNorm
 from torch_geometric.nn import MessagePassing
 import torch.nn.functional as F
 from torch_geometric.nn import global_mean_pool, global_add_pool
 from torch_geometric.utils import degree
-from torch.nn import Sequential as Seq, Linear, ReLU, BatchNorm1d
+from torch.nn import Sequential as Seq, Linear, ReLU, LayerNorm
 
 
 ### GINE convolution along the graph structure
