@@ -10,32 +10,34 @@ from torch.nn import Sequential as Seq, Linear, ReLU, LayerNorm
 class GINEConv(MessagePassing):
     def __init__(self, emb_dim):
         super(GINEConv, self).__init__(aggr='add')
+
         self.mlp = Seq(
             Linear(emb_dim, 2 * emb_dim),
             LayerNorm(2 * emb_dim),
             ReLU(),
             Linear(2 * emb_dim, emb_dim)
         )
+
         self.edge_encoder = Linear(7, emb_dim)
-        self.eps = torch.nn.Parameter(torch.Tensor([0]))
+        self.eps = torch.nn.Parameter(torch.Tensor([0.0]))
 
     def forward(self, x, edge_index, edge_attr):
+        # Ensure inputs are of correct shape
         if x.dim() == 1:
             x = x.unsqueeze(0)
         if edge_attr.dim() == 1:
             edge_attr = edge_attr.unsqueeze(0)
 
+        # Encode edge attributes
         edge_attr = self.edge_encoder(edge_attr)
 
-        assert x.dim() == 2, f"x shape errata: {x.shape}"
-        assert edge_attr.dim() == 2, f"edge_attr shape errata: {edge_attr.shape}"
+        # Check dimensional compatibility
+        assert x.size(1) == edge_attr.size(1), f"Mismatch in dimensions: x {x.shape}, edge_attr {edge_attr.shape}"
 
-        propagated = self.propagate(edge_index, x=x, edge_attr=edge_attr)
-
-        return self.mlp((1 + self.eps) * x + propagated)
+        out = self.propagate(edge_index, x=x, edge_attr=edge_attr)
+        return self.mlp((1 + self.eps) * x + out)
 
     def message(self, x_j, edge_attr):
-        assert x_j.shape == edge_attr.shape, f"x_j shape: {x_j.shape}, edge_attr shape: {edge_attr.shape}"
         return F.relu(x_j + edge_attr)
 
     def update(self, aggr_out):
