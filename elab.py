@@ -88,7 +88,7 @@ def fast_class_weights(subset, num_classes=6):
     for idx in indices:
         graph_dict = dataset.graphs_dicts[idx]
         if graph_dict["y"] is not None:
-            label = int(graph_dict["y"][0])
+            label = int(graph_dict["y"][0][0])
             labels.append(label)
 
     labels = np.array(labels, dtype=int)
