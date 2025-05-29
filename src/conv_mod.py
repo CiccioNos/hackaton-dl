@@ -1,8 +1,7 @@
 import torch
 from torch_geometric.nn import MessagePassing
 import torch.nn.functional as F
-from torch_geometric.nn import global_mean_pool, global_add_pool
-from torch_geometric.utils import degree
+from torch_geometric.nn import global_add_pool
 from torch.nn import Sequential as Seq, Linear, ReLU, LayerNorm
 
 
@@ -43,13 +42,14 @@ class GINEConv(MessagePassing):
     def update(self, aggr_out):
         return aggr_out
 
+
 ### GNN to generate node embedding
 class GNN_node(torch.nn.Module):
     """
     Output:
         node representations
     """
-    def __init__(self, num_layer, emb_dim, drop_ratio = 0.5, JK = "last", residual = False, gnn_type = 'gine'):
+    def __init__(self, num_layer, emb_dim, drop_ratio = 0.5, JK = "sum", residual = True, gnn_type = 'gine'):
         '''
             emb_dim (int): node embedding dimensionality
             num_layer (int): number of GNN message passing layers
@@ -60,13 +60,12 @@ class GNN_node(torch.nn.Module):
         self.num_layer = num_layer
         self.drop_ratio = drop_ratio
         self.JK = JK
-        ### add residual connection or not
         self.residual = residual
 
         if self.num_layer < 2:
             raise ValueError("Number of GNN layers must be greater than 1.")
 
-        self.node_encoder = torch.nn.Embedding(1, emb_dim) # uniform input node embedding
+        self.node_encoder = torch.nn.Embedding(1, emb_dim)
 
         ###List of GNNs
         self.convs = torch.nn.ModuleList()
