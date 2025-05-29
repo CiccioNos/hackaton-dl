@@ -132,51 +132,58 @@ def main(args):
     # Get the directory where the main script is located
     script_dir = os.path.dirname(os.path.abspath(__file__))
     device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
+    print(f"Using device: {device}")
 
     # Set hyperparameters and model
     best_num_layers = 5
     best_emb_dim = 300
     best_drop_ratio = 0.3
 
+    best_batch_size = 64
     best_lr = 0.001
 
     num_epochs = 10
 
     model = GNN(gnn_type='gin', num_class=6, num_layer=best_num_layers, emb_dim=best_emb_dim,
                 drop_ratio=best_drop_ratio, virtual_node=False).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=best_lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=best_lr, weight_decay=1e-4)
 
-    # Identify dataset folder (A, B, C, or D)
+    # Transorm for data loading
+    transform = Compose([AddStructuralFeatures(out_dim=best_emb_dim)])
+
+    # DATASET: Identify dataset folder (A, B, C, or D)
     test_dir_name = os.path.basename(os.path.dirname(args.test_path))
     
-    # Setup logging
+    # LOGGING: Setup logging
     logs_folder = os.path.join(script_dir, "logs", test_dir_name)
     log_file = os.path.join(logs_folder, "training.log")
     os.makedirs(os.path.dirname(log_file), exist_ok=True)
     logging.basicConfig(filename=log_file, level=logging.INFO, format='%(asctime)s - %(message)s')
     logging.getLogger().addHandler(logging.StreamHandler())  # Console output as well
 
-    # Define checkpoint path relative to the script's directory
+    # CHECKPOINT: Define checkpoint path relative to the script's directory
     checkpoint_path = os.path.join(script_dir, "checkpoints", f"model_{test_dir_name}_best.pth")
     checkpoints_folder = os.path.join(script_dir, "checkpoints", test_dir_name)
     os.makedirs(checkpoints_folder, exist_ok=True)
 
-    # Load pre-trained model for inference
-    if os.path.exists(checkpoint_path) and not args.train_path:
-        model.load_state_dict(torch.load(checkpoint_path, map_location=device))
-        print(f"Loaded best model from {checkpoint_path}")
-
-    # Function to transfrorm data by adding information about the nodes
-    transform = Compose([AddStructuralFeatures()])
-    best_batch_size = 64
-
     if args.train_path:
         print("📊 Loading training dataset...")
         train_dataset = GraphDataset(args.train_path, transform=transform)
-        train_loader = DataLoader(train_dataset, batch_size=best_batch_size, shuffle=True)
         print(f"Training dataset loaded with {len(train_dataset)} graphs.")
 
-        weights = class_weights(train_dataset)
+        # Split dataset into training and validation sets
+        print("🔍 Splitting dataset into training and validation sets...")
+        val_size = int(0.2 * len(train_dataset))
+        train_size = len(train_dataset) - val_size
+        train_set, val_set = torch.utils.data.random_split(train_dataset, [train_size, val_size])
+        print(f"Training set size: {len(train_set)}, Validation set size: {len(val_set)}")
+
+        print("📦 Creating data loaders...")
+        train_loader = DataLoader(train_set, batch_size=best_batch_size, shuffle=True)
+        val_loader = DataLoader(val_set, batch_size=best_batch_size, shuffle=False)
+
+        print("🧮 Computing class weights...")
+        weights = class_weights(train_set, num_classes=6)
         print(f"Class weights computed: {weights}")
         criterion = torch.nn.CrossEntropyLoss(weight=weights.to(device))
 
@@ -190,14 +197,13 @@ def main(args):
                 checkpoint_path=os.path.join(checkpoints_folder, f"model_{test_dir_name}"),
                 current_epoch=epoch
             )
-            train_loss_eval, train_acc_eval, _ , _ , _ , _ = evaluate(train_loader, model, device, criterion, calculate_metrics=True)
-            print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}")
-            print(f"Epoch {epoch + 1}/{num_epochs}, Evaluation Loss: {train_loss_eval:.4f}, Evaluation Train Acc: {train_acc_eval:.4f}")
+            val_loss, val_acc, _ , _ , _ , _ = evaluate(val_loader, model, device, criterion, calculate_metrics=True)
+            print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}")
             
             # Save logs for training progress
             train_losses.append(train_loss)
             train_accuracies.append(train_acc)
-            logging.info(f"Epoch {epoch + 1}/{num_epochs}, Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}")
+            logging.info(f"Epoch {epoch + 1}/{num_epochs}, Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}")
 
             # Save best model
             if train_acc > best_accuracy:
@@ -210,10 +216,21 @@ def main(args):
 
         print("🏋Training completed. Best model saved.")
 
+    # Load pre-trained model for inference
+    if os.path.exists(checkpoint_path) and not args.train_path:
+        model.load_state_dict(torch.load(checkpoint_path, map_location=device))
+        print(f"Loaded best model from {checkpoint_path}")
+
     print("📊 Loading test dataset...")
     test_dataset = GraphDataset(args.test_path, transform=transform)
     test_loader = DataLoader(test_dataset, batch_size=best_batch_size, shuffle=False)
     print(f"Test dataset loaded with {len(test_dataset)} graphs.")
+
+    # Generate predictions for the test set using the best model
+    print("🏋Start evaluating the model on the test set...")
+    predictions = evaluate(test_loader, model, device, calculate_metrics=False)
+    save_predictions(predictions, args.test_path)
+    print("✅ Predictions saved successfully.")
 
 
 def research_main(args):
