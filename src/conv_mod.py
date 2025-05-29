@@ -49,7 +49,7 @@ class GNN_node(torch.nn.Module):
     Output:
         node representations
     """
-    def __init__(self, num_layer, emb_dim, drop_ratio = 0.5, JK = "sum", residual = True, gnn_type = 'gine'):
+    def __init__(self, num_layer, emb_dim, drop_ratio = 0.5, JK = "last", residual = True, gnn_type = 'gine'):
         '''
             emb_dim (int): node embedding dimensionality
             num_layer (int): number of GNN message passing layers
