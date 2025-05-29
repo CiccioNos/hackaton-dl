@@ -148,14 +148,14 @@ def main(args):
     print(f"Using device: {device}")
 
     # Set hyperparameters and model
-    best_num_layers = 5
-    best_emb_dim = 300
-    best_drop_ratio = 0.3
+    best_num_layers = 4
+    best_emb_dim = 500
+    best_drop_ratio = 0.5
 
-    best_batch_size = 64
-    best_lr = 0.001
+    best_batch_size = 128
+    best_lr = 0.005
 
-    num_epochs = 10
+    num_epochs = 20
 
     model = GNN(gnn_type='gin', num_class=6, num_layer=best_num_layers, emb_dim=best_emb_dim,
                 drop_ratio=best_drop_ratio, virtual_node=False).to(device)
@@ -179,6 +179,8 @@ def main(args):
     checkpoints_folder = os.path.join(script_dir, "checkpoints", test_dir_name)
     os.makedirs(checkpoints_folder, exist_ok=True)
 
+    criterion = None
+
     if args.train_path:
         print("📊 Loading training dataset...")
         train_dataset = GraphDataset(args.train_path, transform=transform)
@@ -196,7 +198,6 @@ def main(args):
         val_loader = DataLoader(val_set, batch_size=best_batch_size, shuffle=False)
 
         print("🧮 Computing class weights...")
-        # weights = class_weights(train_set, num_classes=6)
         fast_weights = fast_class_weights(train_set, num_classes=6)
         print(f"Class weights computed: {fast_weights}")
         criterion = torch.nn.CrossEntropyLoss(weight=fast_weights.to(device))
@@ -240,6 +241,9 @@ def main(args):
     test_loader = DataLoader(test_dataset, batch_size=best_batch_size, shuffle=False)
     print(f"Test dataset loaded with {len(test_dataset)} graphs.")
 
+
+    if criterion is None:
+        criterion = torch.nn.CrossEntropyLoss()
     # Generate predictions for the test set using the best model
     print("🏋Start evaluating the model on the test set...")
     predictions = evaluate(test_loader, model, device, calculate_metrics=False)
