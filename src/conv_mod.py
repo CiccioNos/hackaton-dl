@@ -1,14 +1,14 @@
 import torch
-from torch_geometric.nn import MessagePassing
+from torch_geometric.nn import GINEConv, MessagePassing, BatchNorm
 import torch.nn.functional as F
 from torch_geometric.nn import global_add_pool
 from torch.nn import Sequential as Seq, Linear, ReLU, LayerNorm
 
 
 ### GINE convolution along the graph structure
-class GINEConv(MessagePassing):
+class GINEConvMod(MessagePassing):
     def __init__(self, emb_dim):
-        super(GINEConv, self).__init__(aggr='add')
+        super(GINEConvMod, self).__init__(aggr='add')
 
         self.mlp = Seq(
             Linear(emb_dim, 2 * emb_dim),
@@ -66,20 +66,25 @@ class GNN_node(torch.nn.Module):
             raise ValueError("Number of GNN layers must be greater than 1.")
 
         self.node_encoder = torch.nn.Embedding(1, emb_dim)
+        self.edge_encoder = torch.nn.Linear(7, emb_dim)
 
         ###List of GNNs
         self.convs = torch.nn.ModuleList()
         self.batch_norms = torch.nn.ModuleList()
 
         for layer in range(num_layer):
-            self.convs.append(GINEConv(emb_dim))
+            mlp =  Seq(
+                Linear(emb_dim, 2  * emb_dim),
+                ReLU(),
+                Linear(2 * emb_dim, emb_dim)
+            )
+            self.convs.append(GINEConv(nn=mlp, train_eps=True))
             self.batch_norms.append(torch.nn.BatchNorm1d(emb_dim))
 
     def forward(self, batched_data):
         x, edge_index, edge_attr, batch = batched_data.x, batched_data.edge_index, batched_data.edge_attr, batched_data.batch
-
-
-        ### computing input node embedding
+        x = self.node_encoder(x)
+        edge_attr = self.edge_encoder(edge_attr)
 
         h_list = [x]
         for layer in range(self.num_layer):
