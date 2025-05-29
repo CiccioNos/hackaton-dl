@@ -20,8 +20,14 @@ class GINEConv(MessagePassing):
         self.eps = torch.nn.Parameter(torch.Tensor([0]))
 
     def forward(self, x, edge_index, edge_attr):
+        if x.dim() == 1:
+            x = x.unsqueeze(0)
+        if edge_attr.dim() == 1:
+            edge_attr = edge_attr.unsqueeze(0)
+
         edge_attr = self.edge_encoder(edge_attr)
-        return self.mlp((1 + self.eps) * x + self.propagate(edge_index, x=x, edge_attr=edge_attr))
+        out = self.propagate(edge_index, x=x, edge_attr=edge_attr)
+        return self.mlp((1 + self.eps) * x + out)
 
     def message(self, x_j, edge_attr):
         return F.relu(x_j + edge_attr)
