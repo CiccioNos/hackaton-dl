@@ -4,12 +4,12 @@ from torch_geometric.nn import global_add_pool, global_mean_pool, global_max_poo
 import torch.nn.functional as F
 from torch_geometric.nn.inits import uniform
 
-from src.conv import GNN_node, GNN_node_Virtualnode
+from src.conv_mod import GNN_node, GNN_node_Virtualnode
 
 class GNN(torch.nn.Module):
 
     def __init__(self, num_class, num_layer = 5, emb_dim = 300, 
-                    gnn_type = 'gin', virtual_node = True, residual = False, drop_ratio = 0.5, JK = "sum", graph_pooling = "attention"):
+                    gnn_type = 'gine', virtual_node = False, residual = False, drop_ratio = 0.5, JK = "sum", graph_pooling = "attention"):
         '''
             num_tasks (int): number of labels to be predicted
             virtual_node (bool): whether to add virtual node or not
