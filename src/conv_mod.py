@@ -84,6 +84,7 @@ class GNN_node(torch.nn.Module):
     def forward(self, batched_data):
         x, edge_index, edge_attr, batch = batched_data.x, batched_data.edge_index, batched_data.edge_attr, batched_data.batch
         # x = self.node_encoder(x)
+        x = self.node_encoder(torch.zeros(x.size(0), dtype=torch.long, device=x.device))
         edge_attr = self.edge_encoder(edge_attr)
 
         h_list = [x]
