@@ -66,7 +66,7 @@ class GNN_node(torch.nn.Module):
             raise ValueError("Number of GNN layers must be greater than 1.")
 
         self.node_encoder = torch.nn.Embedding(1, emb_dim)
-        # self.edge_encoder = torch.nn.Linear(7, emb_dim)
+        self.edge_encoder = torch.nn.Linear(7, emb_dim)
 
         ###List of GNNs
         self.convs = torch.nn.ModuleList()
@@ -78,7 +78,7 @@ class GNN_node(torch.nn.Module):
                 ReLU(),
                 Linear(2 * emb_dim, emb_dim)
             )
-            self.convs.append(GINEConv(nn=mlp, train_eps=True, edge_dim=7))
+            self.convs.append(GINEConv(nn=mlp, train_eps=True, edge_dim=emb_dim))
             self.batch_norms.append(torch.nn.BatchNorm1d(emb_dim))
 
     def forward(self, batched_data):
