@@ -20,6 +20,22 @@ def add_zeros(data):
     return data
 
 
+def add_node_features(data):
+    row, col = data.edge_index
+    deg = torch.bincount(row, minlength=data.num_nodes).float().view(-1, 1)
+    deg = deg / (deg.max() + 1e-5)
+
+    in_deg = torch.bincount(col, minlength=data.num_nodes).float().view(-1, 1)
+    in_deg = in_deg / (in_deg.max() + 1e-5)
+
+    out_deg = torch.bincount(row, minlength=data.num_nodes).float().view(-1, 1)
+    out_deg = out_deg / (out_deg.max() + 1e-5)
+
+    norm_node_id = torch.arange(data.num_nodes).float().view(-1, 1) / (data.num_nodes + 1e-5)
+    data.x = torch.cat([deg, in_deg, out_deg, norm_node_id], dim=1)
+    return data
+
+
 def train(data_loader, model, optimizer, criterion, device, save_checkpoints, checkpoint_path, current_epoch):
     model.train()
     total_loss = 0
@@ -149,14 +165,14 @@ def main(args):
 
     print("📊 Loading test dataset...")
     # Prepare test dataset and loader
-    test_dataset = GraphDataset(args.test_path, transform=add_zeros)
+    test_dataset = GraphDataset(args.test_path, transform=add_node_features)
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
     print(f"Test dataset loaded with {len(test_dataset)} graphs.")
 
     # If train_path is provided, train the model
     if args.train_path:
         print("📊 Loading training dataset...")
-        train_dataset = GraphDataset(args.train_path, transform=add_zeros)
+        train_dataset = GraphDataset(args.train_path, transform=add_node_features)
         train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
         print(f"Training dataset loaded with {len(train_dataset)} graphs.")
 
