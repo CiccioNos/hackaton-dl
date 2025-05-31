@@ -22,6 +22,18 @@ def recon_loss(z, pos_edge_index, neg_edge_index):
     return pos_loss + neg_loss
 
 
+def gcod_loss(z, y, temperature=0.5):
+    device = z.device
+    sim_matrix = torch.matmul(z, z.T) / temperature
+    sim_matrix = torch.nn.functional.log_softmax(sim_matrix, dim=1)
+
+    labels = y.unsqueeze(0) == y.unsqueeze(1)  # [N, N] bool matrix
+    labels = labels.float().to(device)
+
+    loss_per_sample = - (sim_matrix * labels).sum(dim=1) / labels.sum(dim=1).clamp(min=1)
+    return loss_per_sample.mean()
+
+
 def add_zeros(data):
     data.x = torch.zeros(data.num_nodes, dtype=torch.long)
     return data
@@ -52,7 +64,10 @@ def train(data_loader, model, optimizer, criterion, device, save_checkpoints, ch
         z = model(data)
         pos_edge_index = data.edge_index
         neg_edge_index = negative_sampling(edge_index=pos_edge_index, num_nodes=z.size(0))
-        loss = recon_loss(z, pos_edge_index, neg_edge_index)
+        if hasattr(data, 'y') and data.y is not None:
+            loss = gcod_loss(z, data.y)
+        else:
+            loss = recon_loss(z, pos_edge_index, neg_edge_index)
         loss.backward()
         optimizer.step()
         total_loss += loss.item()
@@ -78,7 +93,10 @@ def evaluate(data_loader, model, device, calculate_accuracy=False):
             z = model(data)
             pos_edge_index = data.edge_index
             neg_edge_index = negative_sampling(edge_index=pos_edge_index, num_nodes=z.size(0))
-            loss = recon_loss(z, pos_edge_index, neg_edge_index)
+            if hasattr(data, 'y') and data.y is not None:
+                loss = gcod_loss(z, data.y)
+            else:
+                loss = recon_loss(z, pos_edge_index, neg_edge_index)
             losses.append(loss.item())
             pred = z.argmax(dim=1)
             predictions.extend(pred.cpu().numpy())
