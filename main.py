@@ -2,6 +2,7 @@ import argparse
 import os
 import torch
 from torch_geometric.loader import DataLoader
+from torch_geometric.utils import negative_sampling
 from src.loadData import GraphDataset
 from src.utils import set_seed
 import pandas as pd
@@ -13,6 +14,12 @@ from src.models import GNN
 
 # Set the random seed
 set_seed(88)
+
+
+def recon_loss(z, pos_edge_index, neg_edge_index):
+    pos_loss = -torch.log(torch.sigmoid((z[pos_edge_index[0]] * z[pos_edge_index[1]]).sum(dim=-1)) + 1e-15).mean()
+    neg_loss = -torch.log(1 - torch.sigmoid((z[neg_edge_index[0]] * z[neg_edge_index[1]]).sum(dim=-1)) + 1e-15).mean()
+    return pos_loss + neg_loss
 
 
 def add_zeros(data):
@@ -42,8 +49,10 @@ def train(data_loader, model, optimizer, criterion, device, save_checkpoints, ch
     for data in tqdm(data_loader, desc="Training batches", unit="batch"):
         data = data.to(device)
         optimizer.zero_grad()
-        output = model(data)
-        loss = criterion(output, data.y)
+        z = model(data)
+        pos_edge_index = data.edge_index
+        neg_edge_index = negative_sampling(edge_index=pos_edge_index, num_nodes=z.size(0))
+        loss = recon_loss(z, pos_edge_index, neg_edge_index)
         loss.backward()
         optimizer.step()
         total_loss += loss.item()
@@ -61,19 +70,24 @@ def evaluate(data_loader, model, device, calculate_accuracy=False):
     model.eval()
     correct = 0
     total = 0
+    losses = []
     predictions = []
     with torch.no_grad():
         for data in tqdm(data_loader, desc="Iterating eval graphs", unit="batch"):
             data = data.to(device)
-            output = model(data)
-            pred = output.argmax(dim=1)
+            z = model(data)
+            pos_edge_index = data.edge_index
+            neg_edge_index = negative_sampling(edge_index=pos_edge_index, num_nodes=z.size(0))
+            loss = recon_loss(z, pos_edge_index, neg_edge_index)
+            losses.append(loss.item())
+            pred = z.argmax(dim=1)
             predictions.extend(pred.cpu().numpy())
             if calculate_accuracy:
                 correct += (pred == data.y).sum().item()
                 total += data.y.size(0)
     if calculate_accuracy:
         accuracy = correct / total # ERROR: Division By 0
-        return accuracy, predictions
+        return accuracy, sum(losses)/len(losses), predictions
     return predictions
 
 
@@ -140,7 +154,7 @@ def main(args):
     else:
         raise ValueError('Invalid GNN type')
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-    criterion = torch.nn.CrossEntropyLoss()
+    criterion = None
 
     # Identify dataset folder (A, B, C, or D)
     test_dir_name = os.path.basename(os.path.dirname(args.test_path))
@@ -196,8 +210,8 @@ def main(args):
                 checkpoint_path=os.path.join(checkpoints_folder, f"model_{test_dir_name}"),
                 current_epoch=epoch
             )
-            train_acc, _ = evaluate(train_loader, model, device, calculate_accuracy=True)
-            print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}")
+            train_acc, eval_loss, _ = evaluate(train_loader, model, device, calculate_accuracy=True)
+            print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, Eval Loss: {eval_loss:.4f}")
             
             # Save logs for training progress
             train_losses.append(train_loss)
@@ -234,7 +248,7 @@ if __name__ == "__main__":
     parser.add_argument('--num_layer', type=int, default=6, help='number of GNN message passing layers (default: 5)')
     parser.add_argument('--emb_dim', type=int, default=300, help='dimensionality of hidden units in GNNs (default: 300)')
     parser.add_argument('--batch_size', type=int, default=64, help='input batch size for training (default: 32)')
-    parser.add_argument('--epochs', type=int, default=30, help='number of epochs to train (default: 10)')
+    parser.add_argument('--epochs', type=int, default=18, help='number of epochs to train (default: 10)')
     
     args = parser.parse_args()
     main(args)
